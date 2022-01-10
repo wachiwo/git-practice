@@ -1,0 +1,9 @@
+section{
+height: 300px;
+width: 300px;
+border: solid 2px #fa5893;
+}
+
+span{
+  color: #fa5893;
+}

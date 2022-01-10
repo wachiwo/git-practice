@@ -1,0 +1,45 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.header-title {
+  padding: 20px 20px;
+}
+main {
+  width: 840px;
+  margin: 50px auto;
+}
+
+.header-title {
+  width: 100%;
+  height: 400px;
+  background-image: url(img/mv.jpg);
+  background-size: cover;
+  background-position: bottom;
+}
+
+.blog-item1 {
+  margin-bottom: 30px;
+  border-bottom: 1px solid #d1d1d1;
+  padding-bottom: 30px;
+}
+
+.blog-item2 {
+  margin-bottom: 30px;
+  border-bottom: 1px solid #d1d1d1;
+  padding-bottom: 30px;
+}
+
+.blog-item3 {
+  margin-bottom: 30px;
+  border-bottom: 1px solid #d1d1d1;
+  padding-bottom: 30px;
+}
+
+.blog-item4 {
+  margin-bottom: 30px;
+  border-bottom: 1px solid #d1d1d1;
+  padding-bottom: 30px;
+}

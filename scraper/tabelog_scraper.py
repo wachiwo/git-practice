@@ -4,6 +4,7 @@
 使い方:
     python scraper/tabelog_scraper.py --prefecture tokyo
     python scraper/tabelog_scraper.py --prefecture osaka --pages 3
+    python scraper/tabelog_scraper.py --prefecture tokyo --save-db
 """
 
 import argparse
@@ -166,6 +167,11 @@ def main():
         default=None,
         help="出力ファイルパス（デフォルト: data/<prefecture>_ramen.csv）",
     )
+    parser.add_argument(
+        "--save-db",
+        action="store_true",
+        help="SQLiteデータベースにも保存する",
+    )
     args = parser.parse_args()
 
     prefecture = PREFECTURES[args.prefecture]
@@ -198,6 +204,12 @@ def main():
 
     if all_shops:
         save_to_csv(all_shops, output)
+
+        if args.save_db:
+            from scraper.database import init_db, insert_shops, get_shop_count
+            init_db()
+            insert_shops(all_shops, prefecture=args.prefecture)
+            print(f"DB登録件数: {get_shop_count()}件")
     else:
         print("\nデータが取得できませんでした。")
         print("食べログの構造が変更されている可能性があります。")

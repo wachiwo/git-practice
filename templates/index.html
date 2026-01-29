@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ラーメン店検索</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 8px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #888;
+      margin-bottom: 24px;
+      font-size: 14px;
+    }
+
+    /* 検索フォーム */
+    .search-form {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 24px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: end;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      min-width: 150px;
+    }
+
+    .form-group label {
+      font-size: 13px;
+      font-weight: bold;
+      color: #555;
+    }
+
+    .form-group select,
+    .form-group input {
+      padding: 8px 12px;
+      font-size: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      outline: none;
+    }
+
+    .form-group select:focus,
+    .form-group input:focus {
+      border-color: #e74c3c;
+    }
+
+    .search-btn {
+      padding: 8px 24px;
+      font-size: 15px;
+      background: #e74c3c;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      height: 38px;
+    }
+
+    .search-btn:hover {
+      background: #c0392b;
+    }
+
+    /* 検索結果 */
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .result-count {
+      font-size: 14px;
+      color: #888;
+    }
+
+    .shop-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .shop-card {
+      background: #fff;
+      padding: 16px 20px;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .shop-info {
+      flex: 1;
+    }
+
+    .shop-name {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    .shop-name a {
+      color: #333;
+      text-decoration: none;
+    }
+
+    .shop-name a:hover {
+      color: #e74c3c;
+      text-decoration: underline;
+    }
+
+    .shop-detail {
+      font-size: 13px;
+      color: #666;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .shop-rating {
+      background: #e74c3c;
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 4px;
+      font-size: 18px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      color: #888;
+      font-size: 16px;
+    }
+
+    /* レスポンシブ */
+    @media (max-width: 600px) {
+      .form-row {
+        flex-direction: column;
+      }
+
+      .shop-card {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .shop-rating {
+        align-self: flex-end;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>ラーメン店検索</h1>
+    <p class="subtitle">全国のラーメン店を検索（登録: {{ total_count }}件）</p>
+
+    <form class="search-form" action="/" method="get">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="prefecture">都道府県</label>
+          <select name="prefecture" id="prefecture">
+            {% for key, name in prefectures.items() %}
+            <option value="{{ key }}" {% if key == selected_prefecture %}selected{% endif %}>{{ name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="genre">ジャンル</label>
+          <select name="genre" id="genre">
+            {% for g in genres %}
+            <option value="{{ g }}" {% if g == selected_genre %}selected{% endif %}>{{ g if g else "すべて" }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="keyword">フリーワード</label>
+          <input type="text" name="keyword" id="keyword" value="{{ keyword }}" placeholder="店名・住所など">
+        </div>
+
+        <button type="submit" class="search-btn">検索</button>
+      </div>
+    </form>
+
+    <div class="result-header">
+      <span class="result-count">検索結果: {{ results|length }}件</span>
+    </div>
+
+    <div class="shop-list">
+      {% if results %}
+        {% for shop in results %}
+        <div class="shop-card">
+          <div class="shop-info">
+            <div class="shop-name">
+              {% if shop.url %}
+              <a href="{{ shop.url }}" target="_blank" rel="noopener">{{ shop.name }}</a>
+              {% else %}
+              {{ shop.name }}
+              {% endif %}
+            </div>
+            <div class="shop-detail">
+              <span>{{ shop.address }}</span>
+              <span>{{ shop.genre }}</span>
+            </div>
+          </div>
+          {% if shop.rating %}
+          <div class="shop-rating">{{ shop.rating }}</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="no-results">
+          検索条件に一致する店舗が見つかりませんでした。
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

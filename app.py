@@ -6,9 +6,12 @@
     ブラウザで http://localhost:5000 にアクセス
 """
 
-from flask import Flask, render_template, request
+import threading
 
-from scraper.database import init_db, search_shops, get_shop_count
+from flask import Flask, render_template, request, jsonify, redirect, url_for
+
+from scraper.database import init_db, search_shops, get_shop_count, insert_shops
+from scraper.tabelog_scraper import PREFECTURES, build_url, fetch_page, parse_shops
 
 app = Flask(__name__)
 
@@ -58,6 +61,60 @@ def index():
         keyword=keyword,
         total_count=get_shop_count(),
     )
+
+
+scrape_status = {"running": False, "message": "", "count": 0}
+
+
+@app.route("/scrape", methods=["POST"])
+def scrape():
+    pref = request.form.get("scrape_prefecture", "")
+    pages = int(request.form.get("scrape_pages", 1))
+
+    if not pref or pref not in PREFECTURES:
+        return redirect(url_for("index"))
+
+    if scrape_status["running"]:
+        return redirect(url_for("index"))
+
+    def run_scrape():
+        import time
+        scrape_status["running"] = True
+        scrape_status["message"] = "取得中..."
+        scrape_status["count"] = 0
+
+        all_shops = []
+        for page in range(1, pages + 1):
+            try:
+                url = build_url(PREFECTURES[pref], page)
+                html = fetch_page(url)
+                shops = parse_shops(html)
+                all_shops.extend(shops)
+                scrape_status["message"] = f"ページ {page}/{pages} 完了（{len(all_shops)}件取得）"
+            except Exception as e:
+                scrape_status["message"] = f"エラー: {e}"
+                break
+            if page < pages:
+                time.sleep(3)
+
+        if all_shops:
+            inserted = insert_shops(all_shops, prefecture=pref)
+            scrape_status["count"] = inserted
+            scrape_status["message"] = f"完了: {inserted}件追加（合計 {get_shop_count()}件）"
+        elif "エラー" not in scrape_status["message"]:
+            scrape_status["message"] = "データが取得できませんでした。"
+
+        scrape_status["running"] = False
+
+    thread = threading.Thread(target=run_scrape)
+    thread.start()
+
+    return redirect(url_for("index"))
+
+
+@app.route("/scrape/status")
+def scrape_status_api():
+    return jsonify(scrape_status)
 
 
 if __name__ == "__main__":
